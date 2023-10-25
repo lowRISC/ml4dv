@@ -37,10 +37,7 @@ def main():
         while True:
             ibex_state, coverage = stimulus_sender.send_stimulus(stimulus)
 
-            if ibex_state.last_pc is not None:
-                print(f'{ibex_state.last_pc:08x} {ibex_state.last_insn:08x}')
-
-            if ibex_state.last_pc == 0x100080 + 0x18:
+            if ibex_state.last_pc == 0x100000:
                 break
 
         stimulus.finish = True
