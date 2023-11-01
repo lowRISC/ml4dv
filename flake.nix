@@ -32,7 +32,7 @@
           BYTE_FILE="$2"
 
           echo "Assembling..."
-          riscv32-unknown-elf-as "$ASM_FILE" -o "$OBJ_FILE"
+          riscv32-unknown-elf-as -march=rv32imcb "$ASM_FILE" -o "$OBJ_FILE"
           echo "Extracting bytes..."
           riscv32-unknown-elf-objcopy -O binary --only-section=.text "$OBJ_FILE" "$BYTE_FILE"
         '';
