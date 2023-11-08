@@ -87,7 +87,7 @@ class RInstruction(Encoding):
     rs1 = get_rs1
     rs2 = get_rs2
 
-    def instruction(self) -> Instr:
+    def instruction(self) -> Instr | None:
         match self.encoding & 0xfe007000:
             case 0x00000000:
                 return Instr.ADD
@@ -110,6 +110,7 @@ class RInstruction(Encoding):
             case 0x00007000:
                 return Instr.AND
             case _:
+                return None
                 raise AssertionError('Invalid Instruction')
 
     @staticmethod
@@ -135,11 +136,11 @@ class RInstruction(Encoding):
         ]
 
     def sample_cross_coverage(self, previous: 'TypedInstruction') -> list[tuple[Instr, Cov]]:
-        out = []
         if isinstance(previous, RInstruction) or isinstance(previous, JInstruction):
-            if previous.rd() in {self.rs1(), self.rs2()}:
-                out.append((previous.instruction(), Cov.RAW_HAZARD))
-        return out
+            prev_instr = previous.instruction()
+            if prev_instr is not None and previous.rd() in {self.rs1(), self.rs2()}:
+                return [(prev_instr, Cov.RAW_HAZARD)]
+        return []
 
 
 class JInstruction(Encoding):
@@ -191,7 +192,7 @@ class SInstruction(Encoding):
     rs1 = get_rs1
     rs2 = get_rs2
 
-    def instruction(self) -> Instr:
+    def instruction(self) -> Instr | None:
         match self.encoding & 0x00007000:
             case 0x00000000:
                 return Instr.SB
@@ -200,6 +201,7 @@ class SInstruction(Encoding):
             case 0x00002000:
                 return Instr.SW
             case _:
+                return None
                 raise AssertionError('Invalid Instruction')
 
     def offset(self) -> int:
@@ -234,11 +236,11 @@ class SInstruction(Encoding):
         return []
 
     def sample_cross_coverage(self, previous: 'TypedInstruction') -> list[tuple[Instr, Cov]]:
-        out = []
         if isinstance(previous, RInstruction) or isinstance(previous, JInstruction):
-            if previous.rd() in {self.rs1(), self.rs2()}:
-                out.append((previous.instruction(), Cov.RAW_HAZARD))
-        return out
+            prev_instr = previous.instruction()
+            if prev_instr is not None and previous.rd() in {self.rs1(), self.rs2()}:
+                return [(prev_instr, Cov.RAW_HAZARD)]
+        return []
 
 
 TypedInstruction = RInstruction | JInstruction | SInstruction
@@ -255,7 +257,10 @@ class TestInstructions(unittest.TestCase):
             i = Encoding(enc).typed()
             self.assertIsInstance(i, RInstruction)
             assert isinstance(i, RInstruction)
-            self.assertEqual(name, i.instruction().value)
+            ty = i.instruction()
+            self.assertIsNotNone(ty)
+            assert ty is not None
+            self.assertEqual(name, ty.value)
             self.assertEqual(rd, i.rd())
             self.assertEqual(rs1, i.rs1())
             self.assertEqual(rs2, i.rs2())
@@ -283,7 +288,10 @@ class TestInstructions(unittest.TestCase):
             i = Encoding(enc).typed()
             self.assertIsInstance(i, SInstruction)
             assert isinstance(i, SInstruction)
-            self.assertEqual(name, i.instruction().value)
+            ty = i.instruction()
+            self.assertIsNotNone(ty)
+            assert ty is not None
+            self.assertEqual(name, ty.value)
             self.assertEqual(rs1, i.rs1())
             self.assertEqual(rs2, i.rs2())
             self.assertEqual(offset, i.offset())
